@@ -1,4 +1,4 @@
-module github.com/otiai10/gosseract
+module github.com/openrm/gosseract
 
 go 1.12
 

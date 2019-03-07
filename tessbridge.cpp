@@ -165,6 +165,19 @@ bounding_boxes* GetBoundingBoxesVerbose(TessBaseAPI a) {
     return box_array;
 }
 
+orient_result* DetectOrientationScript(TessBaseAPI a) {
+  tesseract::TessBaseAPI * api = (tesseract::TessBaseAPI*)a;
+  struct orient_result* result;
+  result = (orient_result*)malloc(sizeof(orient_result));
+  result->script_name = (char*)malloc(sizeof(char));
+  result->success = api->DetectOrientationScript(
+          &result->orient_deg,
+          &result->orient_conf,
+          (const char**)&result->script_name,
+          &result->script_conf);
+  return result;
+}
+
 bounding_boxes* GetBoundingBoxes(TessBaseAPI a, int pageIteratorLevel) {
     tesseract::TessBaseAPI* api = (tesseract::TessBaseAPI*)a;
     struct bounding_boxes* box_array;
