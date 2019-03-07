@@ -34,6 +34,7 @@ struct orient_result* DetectOrientationScript(TessBaseAPI);
 struct bounding_boxes* GetBoundingBoxes(TessBaseAPI, int);
 bool SetVariable(TessBaseAPI, char*, char*);
 void SetPixImage(TessBaseAPI a, PixImage pix);
+void SetSourceResolution(TessBaseAPI, int);
 void SetPageSegMode(TessBaseAPI, int);
 int GetPageSegMode(TessBaseAPI);
 char* UTF8Text(TessBaseAPI);
