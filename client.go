@@ -269,6 +269,41 @@ func (client *Client) HOCRText() (out string, err error) {
 	return
 }
 
+type OrientationResult struct {
+    OrientationDegree int
+    OrientationConfidence float64
+    ScriptName *string
+    ScriptConfidence float64
+}
+
+func (client *Client) DetectOrientationScript() (out *OrientationResult, err error) {
+	if client.api == nil {
+		return out, fmt.Errorf("TessBaseAPI is not constructed, please use `gosseract.NewClient`")
+	}
+	if err = client.init(); err != nil {
+		return
+	}
+    preResult := C.DetectOrientationScript(client.api)
+	defer C.free(unsafe.Pointer(preResult))
+    // cast
+    result := (*C.struct_orient_result)(unsafe.Pointer(preResult))
+    var scriptName *string
+    if result.script_name != nil {
+        str := C.GoString(result.script_name)
+        scriptName = &str
+    }
+    if !bool(result.success) {
+        return nil, fmt.Errorf("Detection returned an error")
+    }
+    out = &OrientationResult{
+        OrientationDegree: int(result.orient_deg),
+        OrientationConfidence: float64(result.orient_conf),
+        ScriptName: scriptName,
+        ScriptConfidence: float64(result.script_conf),
+    }
+    return
+}
+
 // BoundingBox contains the position, confidence and UTF8 text of the recognized word
 type BoundingBox struct {
 	Box        image.Rectangle

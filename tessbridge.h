@@ -5,6 +5,14 @@ extern "C" {
 typedef void* TessBaseAPI;
 typedef void* PixImage;
 
+struct orient_result {
+    bool success;
+    int orient_deg;
+    float orient_conf;
+    char* script_name;
+    float script_conf;
+};
+
 struct bounding_box {
     int x1,y1,x2,y2;
     char* word;
@@ -22,6 +30,7 @@ void Free(TessBaseAPI);
 void Clear(TessBaseAPI);
 void ClearPersistentCache(TessBaseAPI);
 int Init(TessBaseAPI, char*, char*, char*, char*);
+struct orient_result* DetectOrientationScript(TessBaseAPI);
 struct bounding_boxes* GetBoundingBoxes(TessBaseAPI, int);
 bool SetVariable(TessBaseAPI, char*, char*);
 void SetPixImage(TessBaseAPI a, PixImage pix);
