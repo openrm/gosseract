@@ -36,6 +36,7 @@ struct bounding_boxes* GetBoundingBoxes(TessBaseAPI, int);
 struct bounding_boxes* GetBoundingBoxesVerbose(TessBaseAPI);
 bool SetVariable(TessBaseAPI, char*, char*);
 void SetPixImage(TessBaseAPI a, PixImage pix);
+void SetSourceResolution(TessBaseAPI, int);
 void SetPageSegMode(TessBaseAPI, int);
 int GetPageSegMode(TessBaseAPI);
 char* UTF8Text(TessBaseAPI);

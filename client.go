@@ -205,6 +205,11 @@ func (client *Client) SetVariable(key SettableVariable, value string) error {
 	return nil
 }
 
+func (client *Client) SetSourceResolution(resolution int) error {
+    C.SetSourceResolution(client.api, C.int(resolution))
+    return nil
+}
+
 // SetPageSegMode sets "Page Segmentation Mode" (PSM) to detect layout of characters.
 // See official documentation for PSM here https://github.com/tesseract-ocr/tesseract/wiki/ImproveQuality#page-segmentation-method
 // See https://github.com/otiai10/gosseract/issues/52 for more information.
