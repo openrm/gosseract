@@ -63,6 +63,8 @@ type Client struct {
 	// See http://www.sk-spell.sk.cx/tesseract-ocr-parameters-in-302-version
 	// TODO: Fix link to official page
 	ConfigFilePath string
+
+	isInit bool
 }
 
 // NewClient construct new Client. It's due to caller to Close this client.
@@ -144,24 +146,43 @@ func (client *Client) SetLanguage(langs ...string) error {
 	if len(langs) == 0 {
 		return fmt.Errorf("languages cannot be empty")
 	}
+	client.isInit = false
 	client.Languages = langs
 	return nil
 }
 
 func (client *Client) DisableOutput() error {
-	return client.SetVariable(DEBUG_FILE, os.DevNull)
+	err := client.SetVariable(DEBUG_FILE, os.DevNull)
+
+	if client.isInit == true {
+		client.setVariablesToInitializedAPI()
+	}
+
+	return err
 }
 
 // SetWhitelist sets whitelist chars.
 // See official documentation for whitelist here https://github.com/tesseract-ocr/tesseract/wiki/ImproveQuality#dictionaries-word-lists-and-patterns
 func (client *Client) SetWhitelist(whitelist string) error {
-	return client.SetVariable(TESSEDIT_CHAR_WHITELIST, whitelist)
+	err := client.SetVariable(TESSEDIT_CHAR_WHITELIST, whitelist)
+	
+	if client.isInit == true {
+		client.setVariablesToInitializedAPI()
+	}
+
+	return err
 }
 
 // SetBlacklist sets whitelist chars.
 // See official documentation for whitelist here https://github.com/tesseract-ocr/tesseract/wiki/ImproveQuality#dictionaries-word-lists-and-patterns
 func (client *Client) SetBlacklist(whitelist string) error {
-	return client.SetVariable(TESSEDIT_CHAR_BLACKLIST, whitelist)
+	err := client.SetVariable(TESSEDIT_CHAR_BLACKLIST, whitelist)
+	
+	if client.isInit == true {
+		client.setVariablesToInitializedAPI()
+	}
+
+	return err
 }
 
 // SetVariable sets parameters, representing tesseract::TessBaseAPI->SetVariable.
@@ -170,6 +191,11 @@ func (client *Client) SetBlacklist(whitelist string) error {
 // Check `client.setVariablesToInitializedAPI` for more information.
 func (client *Client) SetVariable(key SettableVariable, value string) error {
 	client.Variables[key] = value
+
+	if client.isInit == true {
+		client.setVariablesToInitializedAPI()
+	}
+
 	return nil
 }
 
@@ -196,12 +222,19 @@ func (client *Client) SetConfigFile(fpath string) error {
 		return fmt.Errorf("the specified config file path seems to be a directory")
 	}
 	client.ConfigFilePath = fpath
+
+	client.isInit = false
 	return nil
 }
 
 // Initialize tesseract::TessBaseAPI
 // TODO: add tessdata prefix
 func (client *Client) init() error {
+
+	if client.isInit == true {
+		C.SetPixImage(client.api, client.pixImage)
+		return nil
+	}
 
 	var languages *C.char
 	if len(client.Languages) != 0 {
@@ -230,7 +263,10 @@ func (client *Client) init() error {
 	if client.pixImage == nil {
 		return fmt.Errorf("PixImage is not set, use SetImage or SetImageFromBytes before Text or HOCRText")
 	}
+
 	C.SetPixImage(client.api, client.pixImage)
+
+	client.isInit = true
 
 	return nil
 }
