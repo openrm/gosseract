@@ -68,6 +68,8 @@ type Client struct {
 	// internal flag to check if the instance should be initialized again
 	// i.e, we should create a new gosseract client when language or config file change
 	shouldInit bool
+
+    dpi int
 }
 
 // NewClient construct new Client. It's due to caller to Close this client.
@@ -94,6 +96,7 @@ func (client *Client) Close() (err error) {
 		C.DestroyPixImage(client.pixImage)
 		client.pixImage = nil
 	}
+    client.dpi = 0
 	return err
 }
 
@@ -120,6 +123,7 @@ func (client *Client) SetImage(imagepath string) error {
 		C.DestroyPixImage(client.pixImage)
 		client.pixImage = nil
 	}
+    client.dpi = 0
 
 	p := C.CString(imagepath)
 	defer C.free(unsafe.Pointer(p))
@@ -144,6 +148,7 @@ func (client *Client) SetImageFromBytes(data []byte) error {
 		C.DestroyPixImage(client.pixImage)
 		client.pixImage = nil
 	}
+    client.dpi = 0
 
 	img := C.CreatePixImageFromBytes((*C.uchar)(unsafe.Pointer(&data[0])), C.int(len(data)))
 	client.pixImage = img
@@ -206,7 +211,7 @@ func (client *Client) SetVariable(key SettableVariable, value string) error {
 }
 
 func (client *Client) SetSourceResolution(resolution int) error {
-    C.SetSourceResolution(client.api, C.int(resolution))
+    client.dpi = resolution
     return nil
 }
 
@@ -240,6 +245,9 @@ func (client *Client) init() error {
 
 	if !client.shouldInit {
 		C.SetPixImage(client.api, client.pixImage)
+        if client.dpi != 0 {
+            C.SetSourceResolution(client.api, C.int(client.dpi))
+        }
 		return nil
 	}
 
@@ -272,6 +280,9 @@ func (client *Client) init() error {
 	}
 
 	C.SetPixImage(client.api, client.pixImage)
+    if client.dpi != 0 {
+        C.SetSourceResolution(client.api, C.int(client.dpi))
+    }
 
 	client.shouldInit = false
 
