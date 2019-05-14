@@ -68,7 +68,7 @@ type Client struct {
 	// i.e, we should create a new gosseract client when language or config file change
 	shouldInit bool
 
-    dpi int
+	dpi int
 }
 
 // NewClient construct new Client. It's due to caller to Close this client.
@@ -95,7 +95,7 @@ func (client *Client) Close() (err error) {
 		C.DestroyPixImage(client.pixImage)
 		client.pixImage = nil
 	}
-    client.dpi = 0
+	client.dpi = 0
 	return err
 }
 
@@ -116,7 +116,7 @@ func (client *Client) SetImage(imagepath string) error {
 		C.DestroyPixImage(client.pixImage)
 		client.pixImage = nil
 	}
-    client.dpi = 0
+	client.dpi = 0
 
 	p := C.CString(imagepath)
 	defer C.free(unsafe.Pointer(p))
@@ -141,7 +141,7 @@ func (client *Client) SetImageFromBytes(data []byte) error {
 		C.DestroyPixImage(client.pixImage)
 		client.pixImage = nil
 	}
-    client.dpi = 0
+	client.dpi = 0
 
 	img := C.CreatePixImageFromBytes((*C.uchar)(unsafe.Pointer(&data[0])), C.int(len(data)))
 	client.pixImage = img
@@ -203,8 +203,8 @@ func (client *Client) SetVariable(key SettableVariable, value string) error {
 }
 
 func (client *Client) SetSourceResolution(resolution int) error {
-    client.dpi = resolution
-    return nil
+	client.dpi = resolution
+	return nil
 }
 
 // SetPageSegMode sets "Page Segmentation Mode" (PSM) to detect layout of characters.
@@ -237,9 +237,9 @@ func (client *Client) init() error {
 
 	if client.shouldInit == false {
 		C.SetPixImage(client.api, client.pixImage)
-        if client.dpi != 0 {
-            C.SetSourceResolution(client.api, C.int(client.dpi))
-        }
+		if client.dpi != 0 {
+			C.SetSourceResolution(client.api, C.int(client.dpi))
+		}
 		return nil
 	}
 
@@ -272,9 +272,9 @@ func (client *Client) init() error {
 	}
 
 	C.SetPixImage(client.api, client.pixImage)
-    if client.dpi != 0 {
-        C.SetSourceResolution(client.api, C.int(client.dpi))
-    }
+	if client.dpi != 0 {
+		C.SetSourceResolution(client.api, C.int(client.dpi))
+	}
 
 	client.shouldInit = false
 
@@ -340,10 +340,10 @@ func (client *Client) HOCRText() (out string, err error) {
 }
 
 type OrientationResult struct {
-    OrientationDegree int
-    OrientationConfidence float64
-    ScriptName *string
-    ScriptConfidence float64
+	OrientationDegree int
+	OrientationConfidence float64
+	ScriptName *string
+	ScriptConfidence float64
 }
 
 func (client *Client) DetectOrientationScript() (out *OrientationResult, err error) {
@@ -353,25 +353,25 @@ func (client *Client) DetectOrientationScript() (out *OrientationResult, err err
 	if err = client.init(); err != nil {
 		return
 	}
-    preResult := C.DetectOrientationScript(client.api)
+	preResult := C.DetectOrientationScript(client.api)
 	defer C.free(unsafe.Pointer(preResult))
-    // cast
-    result := (*C.struct_orient_result)(unsafe.Pointer(preResult))
-    var scriptName *string
-    if result.script_name != nil {
-        str := C.GoString(result.script_name)
-        scriptName = &str
-    }
-    if !bool(result.success) {
-        return nil, fmt.Errorf("Detection returned an error")
-    }
-    out = &OrientationResult{
-        OrientationDegree: int(result.orient_deg),
-        OrientationConfidence: float64(result.orient_conf),
-        ScriptName: scriptName,
-        ScriptConfidence: float64(result.script_conf),
-    }
-    return
+	// cast
+	result := (*C.struct_orient_result)(unsafe.Pointer(preResult))
+	var scriptName *string
+	if result.script_name != nil {
+		str := C.GoString(result.script_name)
+		scriptName = &str
+	}
+	if !bool(result.success) {
+		return nil, fmt.Errorf("Detection returned an error")
+	}
+	out = &OrientationResult{
+		OrientationDegree: int(result.orient_deg),
+		OrientationConfidence: float64(result.orient_conf),
+		ScriptName: scriptName,
+		ScriptConfidence: float64(result.script_conf),
+	}
+	return
 }
 
 // BoundingBox contains the position, confidence and UTF8 text of the recognized word
