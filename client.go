@@ -64,7 +64,9 @@ type Client struct {
 	// TODO: Fix link to official page
 	ConfigFilePath string
 
-	isInit bool
+	// internal flag to check if the instance should be initialized again
+	// i.e, we should create a new gosseract client when language or config file change
+	shouldInit bool
 }
 
 // NewClient construct new Client. It's due to caller to Close this client.
@@ -73,6 +75,7 @@ func NewClient() *Client {
 		api:       C.Create(),
 		Variables: map[SettableVariable]string{},
 		Trim:      true,
+		shouldInit: true,
 	}
 	return client
 }
@@ -146,17 +149,18 @@ func (client *Client) SetLanguage(langs ...string) error {
 	if len(langs) == 0 {
 		return fmt.Errorf("languages cannot be empty")
 	}
-	client.isInit = false
+
 	client.Languages = langs
+
+	client.flagForInit()
+
 	return nil
 }
 
 func (client *Client) DisableOutput() error {
 	err := client.SetVariable(DEBUG_FILE, os.DevNull)
 
-	if client.isInit == true {
-		client.setVariablesToInitializedAPI()
-	}
+	client.setVariablesToInitializedAPIIfNeeded()
 
 	return err
 }
@@ -165,10 +169,8 @@ func (client *Client) DisableOutput() error {
 // See official documentation for whitelist here https://github.com/tesseract-ocr/tesseract/wiki/ImproveQuality#dictionaries-word-lists-and-patterns
 func (client *Client) SetWhitelist(whitelist string) error {
 	err := client.SetVariable(TESSEDIT_CHAR_WHITELIST, whitelist)
-	
-	if client.isInit == true {
-		client.setVariablesToInitializedAPI()
-	}
+
+	client.setVariablesToInitializedAPIIfNeeded()
 
 	return err
 }
@@ -177,10 +179,8 @@ func (client *Client) SetWhitelist(whitelist string) error {
 // See official documentation for whitelist here https://github.com/tesseract-ocr/tesseract/wiki/ImproveQuality#dictionaries-word-lists-and-patterns
 func (client *Client) SetBlacklist(whitelist string) error {
 	err := client.SetVariable(TESSEDIT_CHAR_BLACKLIST, whitelist)
-	
-	if client.isInit == true {
-		client.setVariablesToInitializedAPI()
-	}
+
+	client.setVariablesToInitializedAPIIfNeeded()
 
 	return err
 }
@@ -192,9 +192,7 @@ func (client *Client) SetBlacklist(whitelist string) error {
 func (client *Client) SetVariable(key SettableVariable, value string) error {
 	client.Variables[key] = value
 
-	if client.isInit == true {
-		client.setVariablesToInitializedAPI()
-	}
+	client.setVariablesToInitializedAPIIfNeeded()
 
 	return nil
 }
@@ -223,7 +221,8 @@ func (client *Client) SetConfigFile(fpath string) error {
 	}
 	client.ConfigFilePath = fpath
 
-	client.isInit = false
+	client.flagForInit()
+
 	return nil
 }
 
@@ -231,7 +230,7 @@ func (client *Client) SetConfigFile(fpath string) error {
 // TODO: add tessdata prefix
 func (client *Client) init() error {
 
-	if client.isInit == true {
+	if client.shouldInit == false {
 		C.SetPixImage(client.api, client.pixImage)
 		return nil
 	}
@@ -266,9 +265,16 @@ func (client *Client) init() error {
 
 	C.SetPixImage(client.api, client.pixImage)
 
-	client.isInit = true
+	client.shouldInit = false
 
 	return nil
+}
+
+// This method flag the current instance to be initialized again on the next call to a function that
+// requires a gosseract API initialized: when user change the config file or the languages
+// the instance needs to init a new gosseract api
+func (client *Client) flagForInit() {
+	client.shouldInit = true
 }
 
 // This method sets all the sspecified variables to TessBaseAPI structure.
@@ -285,6 +291,18 @@ func (client *Client) setVariablesToInitializedAPI() error {
 			return fmt.Errorf("failed to set variable with key(%v) and value(%v)", key, value)
 		}
 	}
+	return nil
+}
+
+// Call setVariablesToInitializedAPI only if the API is initialized
+// it is useful to call when changing variables that does not requires
+// to init a new tesseract instance. Otherwise it is better to just flag
+// the instance for re-init (Client.flagForInit())
+func (client *Client) setVariablesToInitializedAPIIfNeeded() error {
+	if client.shouldInit == false {
+		return client.setVariablesToInitializedAPI()
+	}
+
 	return nil
 }
 
